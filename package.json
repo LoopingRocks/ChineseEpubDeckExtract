@@ -1,7 +1,7 @@
 {
   "name": "ebook_decker",
   "version": "1.0.0",
-  "description": "make anki deck from chinese ebook\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D traditional chinese ebook (epub)",
+  "description": "make anki deck from chinese ebook (epub)",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -10,10 +10,10 @@
   "license": "ISC",
   "dependencies": {
     "csv-writer": "^1.0.1",
-    "cvs-writer": "0.0.1",
     "epub": "^0.2.0",
     "is-chinese": "^1.2.5",
-    "node-analyzer": "^5.0.1",
-    "nodejieba": "^2.2.6"
+    "mdbg": "^1.22.0",
+    "nodejieba": "^2.2.6",
+    "winston": "^3.0.0"
   }
 }
