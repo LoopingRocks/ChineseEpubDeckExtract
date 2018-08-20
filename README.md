@@ -1,2 +1,2 @@
 # ChineseEpubDeckExtract
-Extract chinese terms from an epub, in introduction order to a cvs (for anki deck creation)
+Extract simplified chinese terms from an epub to a cvs (for anki deck creation)
