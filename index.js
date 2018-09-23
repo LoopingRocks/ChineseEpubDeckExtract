@@ -7,6 +7,7 @@ const createCsvWriter = require('csv-writer').createObjectCsvWriter
 
 mdbg.init()
 
+//TODO refactor into command line app
 const epub = new epubReader("113726.epub")
 const termsMap = new Map()
 const terms = new Array()
@@ -63,14 +64,14 @@ function readChapter(epub, id) {
             const result = nodejieba.cut(text)
             result.forEach(term => {
                 if (isChinese(term)) {
-                    let termInfo = termsMap.get(term)
-                    if (termInfo) {
-                        termInfo.frequency++
-                        termInfo.chapters.add(chapterIndex)
+                    let termContext = termsMap.get(term)
+                    if (termContext) {
+                        termContext.frequency++
+                        termContext.chapters.add(chapterIndex)
                     }
                     else {
-                        termInfo = { term: term, frequency: 1, chapters: new Set([chapterIndex]) }
-                        termsMap.set(term, termInfo)
+                        termContext = { term: term, frequency: 1, chapters: new Set([chapterIndex]) }
+                        termsMap.set(term, termContext)
                     }
                 }
             })
@@ -80,36 +81,81 @@ function readChapter(epub, id) {
     })
 }
 
-async function updateTermDefinition(termInfo) {
-    const term = termInfo.term
-    let termData = { ...termInfo, simplified: term, traditional: term }
+async function updateTermDefinition(termContext) {
+    const term = termContext.term
+
+    let termData = { ...termContext, simplified: term, traditional: term }
     delete termData.term
 
     termData.chaptersTag = getChaptersTag(termData.chapters)
     delete termData.chapters
 
+    let entries = new Array()
+
     try {
         const dict = await mdbg.getByHanzi(term)
+        //term is in dictionary
 
-        let definitions = new Array()
-        for (let defId in dict.definitions) {
-            definitions.push(dict.definitions[defId])
-        }
-
-        termData = {
-            ...termData,
-            simplified: dict.simplified,
-            traditional: dict.traditional,
-            pinyin: definitions.map(d => d.pinyin).join(" / "),
-            zhuyin: definitions.map(d => d.zhuyin).join(" / "),
-            translation: definitions.map(d => d.translations.join("; ")).join(" / ")
-        }
+        //TODO correct old variant substitution
+        const entry = extractFromDict(dict);
+        entries.push(entry)
     }
     catch (err) {
-        //console.log(err)
+        //full term is not in dictionary
+        //give a definition character by character
+        const termparts = term.split('')
+        const extractAll = termparts.map(async tp => {
+            try {
+                const dictPart = await mdbg.getByHanzi(tp)
+                const partEntry = extractFromDict(dictPart)
+                entries.push(partEntry)
+            } catch (err) {
+                const entry = {
+                    simplified: tp,
+                    traditional: tp,
+                    pinyin: "",
+                    zhuyin: "",
+                    translations: ""
+                }
+                entries.push(entry)
+            }
+        })
+
+        await Promise.all(extractAll)
     }
+    
+    const fullentry = {
+        simplified: entries.map(e => e.simplified).join(''),
+        traditional: entries.map(e => e.traditional).join(''),
+        pinyin: entries.map(e => e.pinyin).join(" | "),
+        zhuyin: entries.map(e => e.zhuyin).join(" | "),
+        translations: entries.map(e => e.translations).join(" | ")
+    }
+    
+    delete termData.simplified
+    delete termData.traditional
+
+    termData = { ...termData, ...fullentry }
 
     return termData;
+}
+
+function extractFromDict(dictEntry, termData) {
+
+    let definitions = new Array();
+    for (let defId in dictEntry.definitions) {
+        definitions.push(dictEntry.definitions[defId]);
+    }
+
+    const entry = {
+        simplified: dictEntry.simplified,
+        traditional: dictEntry.traditional,
+        pinyin: definitions.map(d => d.pinyin).join(" / "),
+        zhuyin: definitions.map(d => d.zhuyin).join(" / "),
+        translations: definitions.map(d => d.translations.join("; ")).join(" / ")
+    }
+
+    return entry;
 }
 
 function getChaptersTag(chapters) {
@@ -125,12 +171,12 @@ async function cvsTerms(termData) {
             { id: 'frequency', title: 'frequency' },
             { id: 'pinyin', title: 'pinyin' },
             { id: 'zhuyin', title: 'zhuyin' },
-            { id: 'translation', title: 'translation' },
+            { id: 'translations', title: 'translations' },
             { id: 'chaptersTag', title: 'chapters' }
         ],
     });
 
-    csvWriter.writeRecords(termData)       // returns a promise
+    csvWriter.writeRecords(termData)
         .then(() => {
             console.log('...Done');
         });
