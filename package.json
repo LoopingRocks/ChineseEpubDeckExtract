@@ -9,10 +9,12 @@
   "author": "Looping rocks",
   "license": "ISC",
   "dependencies": {
+    "arg": "^3.0.0",
+    "cedict-lookup": "0.0.2",
     "csv-writer": "^1.0.1",
     "epub": "^0.2.0",
     "is-chinese": "^1.2.5",
-    "mdbg": "^1.22.0",
+    "mdbg": "github:pepebecker/mdbg",
     "nodejieba": "^2.2.6",
     "winston": "^3.0.0"
   }

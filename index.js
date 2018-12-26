@@ -1,14 +1,28 @@
-const util = require('util')
 const epubReader = require('epub')
 const isChinese = require('is-chinese')
 const nodejieba = require("nodejieba")
 const mdbg = require('mdbg')
 const createCsvWriter = require('csv-writer').createObjectCsvWriter
+const arg = require('arg')
+const path = require('path');
+
+const args = arg({
+    // Types
+    '--ebook':    String,
+    '--deck':    String,
+ 
+    // Aliases
+    '-e':        '--ebook',
+    '-d':        '--deck',
+});
 
 mdbg.init()
 
+const ebookPath = path.resolve(args["--ebook"])
+const deckPath = path.resolve(args["--deck"])
+
 //TODO refactor into command line app
-const epub = new epubReader("113726.epub")
+const epub = new epubReader(ebookPath)
 const termsMap = new Map()
 const terms = new Array()
 
@@ -87,7 +101,7 @@ async function updateTermDefinition(termContext) {
     let termData = { ...termContext, simplified: term, traditional: term }
     delete termData.term
 
-    termData.chaptersTag = getChaptersTag(termData.chapters)
+    termData.chaptersTag = `fr${Math.floor(termData.frequency/100)} ${getChaptersTag(termData.chapters)}`
     delete termData.chapters
 
     let entries = new Array()
@@ -164,7 +178,7 @@ function getChaptersTag(chapters) {
 
 async function cvsTerms(termData) {
     const csvWriter = createCsvWriter({
-        path: 'terms.txt',
+        path: deckPath,
         header: [
             { id: 'traditional', title: 'traditional' },
             { id: 'simplified', title: 'simplified' },
