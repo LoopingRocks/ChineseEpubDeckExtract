@@ -101,7 +101,7 @@ async function updateTermDefinition(termContext) {
     let termData = { ...termContext, simplified: term, traditional: term }
     delete termData.term
 
-    termData.chaptersTag = `fr${Math.floor(termData.frequency/100)} ${getChaptersTag(termData.chapters)}`
+    termData.chaptersTag = `fr${termData.frequency} ${getChaptersTag(termData.chapters)}`
     delete termData.chapters
 
     let entries = new Array()
